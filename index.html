@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drop the Tiles</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+  />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: grid;
+      place-items: start center;
+      overflow: hidden;
+      background: #EBEAEA;
+    }
+
+    #screen {
+      position: relative;
+      width: 100vw;
+      aspect-ratio: 790 / 513;
+      overflow: hidden;
+      background: #EBEAEA;
+    }
+
+    #scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: grid;
+      grid-template-columns: 82fr 120fr 154fr 96fr 182fr 156fr;
+      width: 2257.142857px;
+      height: 1465.714286px;
+      transform-origin: top left;
+      will-change: transform;
+    }
+
+    .photo-cell {
+      position: relative;
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #EBEAEA;
+    }
+
+    .tile {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      will-change: transform;
+    }
+
+    .tile img {
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .drop-word {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap:120px ;
+  color: #000;
+  font-family: "Pretendard", sans-serif;
+  font-size: 178pt;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.075em;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.drop-word span {
+  display: block;
+}
+
+.drop-hover-cell:hover .tile img {
+  opacity: 0;
+}
+
+.drop-hover-cell:hover .drop-word {
+  visibility: visible;
+}
+
+    .title-cell {
+      position: relative;
+      z-index: 2;
+      padding-left: 12px;
+      overflow: visible;
+      background: #EBEAEA;
+      color: #000;
+      font-family: "Pretendard", sans-serif;
+      font-size: 178pt;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -0.075em;
+      white-space: nowrap;
+    }
+
+    #gallery-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #EBEAEA;
+   --photo-height: 13.2vh;
+   --thumbnail-height: 13.2vh;
+}
+
+body.show-gallery #screen {
+  display: none;
+}
+
+body.show-gallery #gallery-screen {
+  display: block;
+}
+
+.gallery-wrap {
+  display: grid;
+  grid-template-rows: 20% 80%;
+  width: 100%;
+  height: 100%;
+}
+
+.gallery-header,
+.gallery-content {
+  display: grid;
+  grid-template-columns: 7.55% minmax(0, 1fr);
+  min-width: 0;
+}
+
+.mint-box {
+  background: #59FFBA;
+}
+
+.thumbnail-row {
+  position: relative;
+  display: block;
+  min-width: 0;
+  background: #EBEAEA;
+  container-type: inline-size;
+}
+
+.thumbnail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+}
+
+.thumbnail-number {
+  position: absolute;
+  top: 1.5cqw;
+  left: 0;
+  z-index: 3;
+  color: #000;
+  font: 700 clamp(20px, 2.6cqw, 36px)/1 "Pretendard", sans-serif;
+}
+
+.thumbnail img {
+  position: absolute;
+  z-index: 1;
+  bottom: 0.9cqw;
+  left: var(--image-offset, 0cqw);
+  display: block;
+  width: auto;
+  height: var(--thumbnail-height);
+  max-width: none;
+  object-fit: contain;
+}
+
+.thumb-2 img,
+.thumb-10 img {
+  background-color: #000;
+}
+
+/* 두 번째 사진 기준 번호 위치와 사진 간격 */
+.thumb-1  { left: 5.15%;  --image-offset: 1.8cqw; }
+.thumb-2  { left: 13.26%; --image-offset: 2cqw; }
+.thumb-3  { left: 22.04%; --image-offset: 0.5cqw; }
+.thumb-4  { left: 27.9%; --image-offset: 0.1cqw; }
+.thumb-5  { left: 37.59%; --image-offset: 1.9cqw; }
+.thumb-6  { left: 46.04%; --image-offset: 0cqw; }
+.thumb-7  { left: 49.79%; --image-offset: 0.05cqw; }
+.thumb-8  { left: 57.9%; --image-offset: 0cqw; }
+.thumb-9  { left: 64.40%; --image-offset: 0cqw; }
+.thumb-10 { left: 77.84%; --image-offset: 3.2cqw; }
+
+.white-rail {
+  position: relative;
+  background: #fff;
+}
+
+.time-indicator {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+#gallery-screen.editor-mode .time-indicator {
+  display: block;
+}
+
+.content-area {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.timeline {
+  position: absolute;
+  top: 5%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #000;
+}
+
+.timeline::before,
+.timeline::after {
+  position: absolute;
+  top: -7px;
+  width: 43px;
+  height: 17px;
+  background: #000;
+  content: "";
+}
+
+.timeline::before {
+  left: 0;
+}
+
+.timeline::after {
+  right: 0;
+}
+
+.pink-phrase {
+  position: absolute;
+  display: inline-block;
+  padding: 0.07em 0.35em;
+  background: #F9AEFF;
+  color: #000;
+  font: 450 clamp(28px, 5.1vw, 92px)/1.14 "Pretendard", sans-serif;
+  white-space: nowrap;
+}
+
+
+.phrase-click {
+  top: 17.8%;
+  left: 0;
+  display: inline-flex;
+  gap: 0.25em;
+}
+
+.phrase-tiles {
+  top: 31.7%;
+  left: 21.5%;
+}
+
+.phrase-tiles-to {
+  top: 44.9%;
+  left: 21.5%;
+}
+
+.phrase-beat {
+  top: 44.9%;
+  right: 0;
+  left: auto;
+}
+
+.phrase-drop {
+  top: 74.2%;
+  left: 50.9%;
+}
+
+/* 갤러리 위쪽 높이를 참고 이미지에 맞춤 */
+
+
+/* 사진을 조금 키우고, 번호는 사진 위에 표시 */
+.thumbnail-number {
+  z-index: 3;
+}
+
+.thumbnail img {
+  height: var(--thumbnail-height);
+  z-index: 1;
+}
+
+/* 사진을 키운 뒤에도 6번과 7번이 붙도록 조정 */
+
+
+/* 선 위에 흰 여백을 만들고 선을 조금 내림 */
+.content-area::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 5.75%;
+  background: #fff;
+  content: "";
+}
+
+.timeline {
+  top: 5.75%;
+  z-index: 1;
+}
+
+.pink-phrase {
+  z-index: 2;
+    user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+.phrase-click {
+  align-items: baseline;
+}
+
+.editor-stage {
+  position: relative;
+  width: 100%;
+  height: 81vh;
+  min-height: 81vh;
+}
+
+#gallery-screen.editor-mode .content-area {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#gallery-screen.editor-mode .pink-phrase {
+  display: none;
+}
+
+#gallery-screen.editor-mode .timeline {
+  z-index: 10;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+#gallery-screen.editor-mode .thumbnail img {
+  cursor: pointer;
+}
+
+.beat-event {
+  position: absolute;
+  z-index: 2;
+  width: auto;
+  height: var(--photo-height);
+  transform: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+.falling-layer {
+  position: fixed;
+  z-index: 50;
+  display: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.falling-block {
+  position: absolute;
+  width: auto;
+  max-width: none;
+  will-change: top;
+}
+
+.stack-backing {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.falling-block {
+  z-index: 1;
+}
+
+.beat-event[data-file="3.png"],
+.beat-event[data-file="10.png"] {
+  background: #000;
+}
+
+#play-button {
+  display: none;
+  border: 1px solid #000;
+  padding: 0.5em 1em;
+  background: transparent;
+  color: #000;
+  font: 600 16px "Pretendard", sans-serif;
+  cursor: pointer;
+}
+
+#gallery-screen.editor-mode #play-button {
+  display: inline-block;
+}
+
+.mint-box {
+  display: grid;
+  place-items: center;
+}
+
+  </style>
+</head>
+
+<body>
+  <div id="screen">
+    <div id="scene"></div>
+  </div>
+
+  <div id="gallery-screen">
+  <div class="gallery-wrap">
+    <div class="gallery-header">
+      <div class="mint-box">
+  <button id="play-button" type="button">PLAY</button>
+</div>
+
+      <div class="thumbnail-row">
+        <div class="thumbnail thumb-1"><span class="thumbnail-number">1</span><img src="1.png" alt=""></div>
+<div class="thumbnail thumb-2"><span class="thumbnail-number">2</span><img src="2.png" alt=""></div>
+<div class="thumbnail thumb-3"><span class="thumbnail-number">3</span><img src="3.png" alt=""></div>
+<div class="thumbnail thumb-4"><span class="thumbnail-number">4</span><img src="4.png" alt=""></div>
+<div class="thumbnail thumb-5"><span class="thumbnail-number">5</span><img src="5.png" alt=""></div>
+<div class="thumbnail thumb-6"><span class="thumbnail-number">6</span><img src="6.png" alt=""></div>
+<div class="thumbnail thumb-7"><span class="thumbnail-number">7</span><img src="7.png" alt=""></div>
+<div class="thumbnail thumb-8"><span class="thumbnail-number">8</span><img src="8.png" alt=""></div>
+<div class="thumbnail thumb-9"><span class="thumbnail-number">9</span><img src="9.png" alt=""></div>
+<div class="thumbnail thumb-10"><span class="thumbnail-number">10</span><img src="10.png" alt=""></div>
+      </div>
+    </div>
+
+    <div class="gallery-content">
+      <div class="white-rail">
+  <div class="time-indicator"></div>
+</div>
+
+      <div class="content-area">
+  <div class="editor-stage">
+    <div class="timeline"></div>
+    <!-- 기존 분홍 글씨들을 모두 여기에 둬 -->
+    <div class="pink-phrase phrase-click">CLICK TILES</div>
+    <div class="pink-phrase phrase-tiles">TILES</div>
+    <div class="pink-phrase phrase-tiles-to">TILES TO</div>
+    <div class="pink-phrase phrase-beat">THE BEAT</div>
+    <div class="pink-phrase phrase-drop">DROP</div>
+  </div>
+</div>
+  </div>
+</div>
+
+  <script>
+    const screen = document.getElementById("screen");
+    const scene = document.getElementById("scene");
+    const movingLayers = [];
+
+    let designScale = 0.35;
+
+    const layerSettings = [
+      {
+        file: "1.png",
+        direction: 1,
+        speed: 500,
+        smallGapMin: -50,
+        smallGapMax: 80,
+        largeGapMin: 120,
+        largeGapMax: 200,
+        largeGapChance: 0.3
+      },
+      {
+        file: "2.png",
+        direction: -1,
+        speed: 420,
+        smallGapMin: 20,
+        smallGapMax: 80,
+        largeGapMin: 200,
+        largeGapMax: 300,
+        largeGapChance: 0.3
+      },
+      { title: "THE" },
+      {
+        file: "6.png",
+        direction: 1,
+        speed: 500,
+        smallGapMin: -15,
+        smallGapMax: 90,
+        largeGapMin: 80,
+        largeGapMax: 150,
+        largeGapChance: 0.5
+      },
+      {
+        file: "7.png",
+        direction: -1,
+        speed: 500,
+        smallGapMin: 10,
+        smallGapMax: 60,
+        largeGapMin: 100,
+        largeGapMax: 150,
+        largeGapChance: 0.5
+      },
+      {
+        file: "11.png",
+        direction: 1,
+        speed: 550,
+        smallGapMin: 10,
+        smallGapMax: 90,
+        largeGapMin: 130,
+        largeGapMax: 180,
+        largeGapChance: 0.35
+      }
+    ];
+
+    function resizeScene() {
+      designScale = 0.35 * (screen.clientWidth / 790);
+      scene.style.transform = `scale(${designScale})`;
+
+      movingLayers.forEach((layer) => {
+        if (layer.image.naturalWidth) {
+          buildLayer(layer);
+        }
+      });
+    }
+
+    function getRandomGap(layer) {
+      const useLargeGap = Math.random() < layer.largeGapChance;
+
+      const min = useLargeGap ? layer.largeGapMin : layer.smallGapMin;
+      const max = useLargeGap ? layer.largeGapMax : layer.smallGapMax;
+      const visibleGap = min + Math.random() * (max - min);
+
+      return visibleGap / designScale;
+    }
+
+    function createTile(layer, y) {
+      const tile = document.createElement("div");
+      tile.className = "tile";
+
+      const img = document.createElement("img");
+      img.src = layer.file;
+      img.alt = "";
+      img.draggable = false;
+
+      tile.appendChild(img);
+      layer.cell.appendChild(tile);
+
+      return { element: tile, y };
+    }
+
+    function buildLayer(layer) {
+      if (!layer.image.naturalWidth) return;
+
+      const width = layer.cell.clientWidth;
+      if (!width) return;
+
+      layer.cell.replaceChildren();
+
+layer.dropWords.forEach((word) => {
+  layer.cell.appendChild(word);
+});
+
+layer.tiles = [];
+
+      layer.imageHeight =
+        width * (layer.image.naturalHeight / layer.image.naturalWidth);
+
+      layer.distanceSinceSpawn = 0;
+
+      const buffer = Math.max(
+        layer.imageHeight * 2,
+        layer.cell.clientHeight * 0.35
+      );
+
+      if (layer.direction === 1) {
+        let y = 0;
+
+        while (y < layer.cell.clientHeight + buffer) {
+          layer.tiles.push(createTile(layer, y));
+          y += layer.imageHeight + getRandomGap(layer);
+        }
+      } else {
+        let y = layer.cell.clientHeight - layer.imageHeight;
+
+        while (y + layer.imageHeight > -buffer) {
+          layer.tiles.push(createTile(layer, y));
+          y -= layer.imageHeight + getRandomGap(layer);
+        }
+      }
+
+      layer.nextSpawnDistance =
+  layer.imageHeight * 0.8 + getRandomGap(layer);
+    }
+
+    layerSettings.forEach((setting) => {
+      if (setting.title) {
+        const title = document.createElement("div");
+        title.className = "title-cell";
+        title.textContent = setting.title;
+        scene.appendChild(title);
+        return;
+      }
+
+      const cell = document.createElement("div");
+      cell.className = "photo-cell";
+      scene.appendChild(cell);
+
+      const layer = {
+        file: setting.file,
+        cell,
+        direction: setting.direction,
+        speed: setting.speed,
+        smallGapMin: setting.smallGapMin,
+        smallGapMax: setting.smallGapMax,
+        largeGapMin: setting.largeGapMin,
+        largeGapMax: setting.largeGapMax,
+        largeGapChance: setting.largeGapChance,
+        image: new Image(),
+        imageHeight: 0,
+        tiles: [],
+        dropWords: [],
+        dropStep: 0
+      };
+
+      if (setting.file === "1.png") {
+  cell.classList.add("drop-hover-cell");
+
+  const word = document.createElement("div");
+  word.className = "drop-word";
+
+  ["D", "R", "O", "P"].forEach((letter) => {
+    const line = document.createElement("span");
+    line.textContent = letter;
+    word.appendChild(line);
+  });
+
+  const secondWord = word.cloneNode(true);
+  layer.dropWords = [word, secondWord];
+
+  layer.dropWords.forEach((item) => {
+    cell.appendChild(item);
+  });
+
+  // 다음 DROP은 앞 글자와 같은 간격으로 이어지게 배치
+  layer.dropStep = word.offsetHeight + 120;
+
+  cell.addEventListener("mouseenter", () => {
+    layer.dropWords.forEach((item, index) => {
+      item.dropY = index === 0 ? 0 : -layer.dropStep;
+      item.style.transform = `translate3d(0, ${item.dropY}px, 0)`;
+    });
+  });
+}
+
+      movingLayers.push(layer);
+
+      layer.image.onload = () => buildLayer(layer);
+      layer.image.src = layer.file;
+    });
+
+    resizeScene();
+    window.addEventListener("resize", resizeScene);
+
+    let previousTime = 0;
+
+    function animate(time) {
+      const deltaTime =
+        previousTime === 0
+          ? 0
+          : Math.min((time - previousTime) / 1000, 0.05);
+
+      previousTime = time;
+
+      movingLayers.forEach((layer) => {
+        if (!layer.imageHeight || layer.tiles.length === 0) return;
+
+        const distance =
+          (layer.speed * deltaTime) / designScale;
+
+          if (layer.dropWords.length && layer.cell.matches(":hover")) {
+  layer.dropWords.forEach((word) => {
+    word.dropY += distance;
+  });
+
+  layer.dropWords.forEach((word) => {
+    if (word.dropY > layer.cell.clientHeight) {
+      const topY = Math.min(
+        ...layer.dropWords.map((item) => item.dropY)
+      );
+
+      word.dropY = topY - layer.dropStep;
+    }
+
+    word.style.transform =
+      `translate3d(0, ${word.dropY}px, 0)`;
+  });
+}
+
+        layer.tiles.forEach((tile) => {
+          tile.y += layer.direction * distance;
+        });
+
+        layer.distanceSinceSpawn += distance;
+
+        while (layer.distanceSinceSpawn >= layer.nextSpawnDistance) {
+          layer.distanceSinceSpawn -= layer.nextSpawnDistance;
+
+          const newY =
+            layer.direction === 1
+              ? layer.distanceSinceSpawn
+              : layer.cell.clientHeight -
+                layer.imageHeight -
+                layer.distanceSinceSpawn;
+
+          layer.tiles.push(createTile(layer, newY));
+
+          layer.nextSpawnDistance =
+            layer.imageHeight + getRandomGap(layer);
+        }
+
+        layer.tiles = layer.tiles.filter((tile) => {
+          const isOffscreen =
+            layer.direction === 1
+              ? tile.y >= layer.cell.clientHeight
+              : tile.y + layer.imageHeight <= 0;
+
+          if (isOffscreen) tile.element.remove();
+          return !isOffscreen;
+        });
+
+        layer.tiles.forEach((tile) => {
+          tile.element.style.transform =
+            `translate3d(0, ${tile.y}px, 0)`;
+        });
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+    
+    function alignClickTiles() {
+  const clickLine = document.querySelector("#gallery-screen .phrase-click");
+  const clickWord = clickLine?.querySelector("span:first-child");
+  const tilesLine = document.querySelector("#gallery-screen .phrase-tiles");
+
+  if (!clickLine || !clickWord || !tilesLine) return;
+
+  const clickStyle = getComputedStyle(clickLine);
+  const tilesStyle = getComputedStyle(tilesLine);
+
+  const targetX =
+    tilesLine.getBoundingClientRect().left +
+    parseFloat(tilesStyle.paddingLeft);
+
+  const clickStartX =
+    clickLine.getBoundingClientRect().left +
+    parseFloat(clickStyle.paddingLeft);
+
+  const gap =
+    targetX -
+    clickStartX -
+    clickWord.getBoundingClientRect().width;
+
+  clickLine.style.gap = `${Math.max(0, gap)}px`;
+}
+
+
+window.addEventListener("resize", alignClickTiles);
+document.fonts.ready.then(alignClickTiles);
+
+(() => {
+  const gallery = document.getElementById("gallery-screen");
+  const stage = document.querySelector(".editor-stage");
+  const scrollArea = document.querySelector(".content-area");
+  const timeline = document.querySelector(".timeline");
+  const thumbnailRow = document.querySelector(".thumbnail-row");
+  const playButton = document.getElementById("play-button");
+  const whiteRail = document.querySelector(".white-rail");
+const timeIndicator = document.querySelector(".time-indicator");
+
+  if (!gallery || !stage || !scrollArea || !timeline || !thumbnailRow || !playButton) {
+    return;
+  }
+
+  const fallingLayer = document.createElement("div");
+fallingLayer.className = "falling-layer";
+document.body.appendChild(fallingLayer);
+
+function fitFallingLayer() {
+  const rect = scrollArea.getBoundingClientRect();
+  fallingLayer.style.left = `${rect.left}px`;
+  fallingLayer.style.top = `${rect.top}px`;
+  fallingLayer.style.width = `${rect.width}px`;
+  fallingLayer.style.height = `${rect.height}px`;
+}
+
+function showScoreAgain() {
+  fallingLayer.replaceChildren();
+  fallingLayer.style.display = "none";
+
+  beatEvents.forEach((item) => {
+    item.element.style.visibility = "visible";
+  });
+}
+
+window.addEventListener("resize", fitFallingLayer);
+
+  // 100px = 1초. 사진 사이의 간격과 재생 시간에 같이 적용돼.
+  const pixelsPerSecond = 100;
+
+  // .content-area::before의 흰 여백 높이(5.75%)와 맞춘 값
+  const whiteGapRatio = 0.0575;
+
+  const beatEvents = [];
+  const timerIds = [];
+  const playingAudios = [];
+
+  let playheadY = 0;
+  let lastPhotoFile = null;
+
+  let lastPhotoClickTime = null;
+  let lastPhotoEventY = 0;
+  let isDragging = false;
+  let isPlaying = false;
+  let animationId = 0;
+  let timeIndicatorAnimationId = 0;
+
+  function grayAreaTop() {
+    return scrollArea.clientHeight * whiteGapRatio;
+  }
+
+  function extendStage(requiredY) {
+    const visibleHeight = scrollArea.clientHeight || window.innerHeight;
+    const neededHeight = Math.max(
+      visibleHeight,
+      requiredY + visibleHeight * 0.25
+    );
+
+    if (neededHeight > stage.clientHeight) {
+      stage.style.height = `${neededHeight}px`;
+    }
+  }
+
+  function updateTimeIndicator(scoreY = playheadY) {
+  const lineRect = timeline.getBoundingClientRect();
+  const railRect = whiteRail.getBoundingClientRect();
+  const lineCenterY = lineRect.top + lineRect.height / 2;
+
+  timeIndicator.style.top =
+    `${lineCenterY - railRect.top + (scoreY - playheadY)}px`;
+}
+
+function animateTimeIndicator() {
+  if (
+    isDragging ||
+    isPlaying ||
+    lastPhotoClickTime === null
+  ) {
+    timeIndicatorAnimationId = 0;
+    return;
+  }
+
+  const elapsed = (performance.now() - lastPhotoClickTime) / 1000;
+  const currentY = lastPhotoEventY + elapsed * pixelsPerSecond;
+
+  updateTimeIndicator(currentY);
+  timeIndicatorAnimationId = requestAnimationFrame(animateTimeIndicator);
+}
+
+function startTimeIndicator() {
+  if (!timeIndicatorAnimationId) {
+    timeIndicatorAnimationId = requestAnimationFrame(animateTimeIndicator);
+  }
+}
+
+function alignSixAndSeven() {
+  const row = document.querySelector(".thumbnail-row");
+  const image6 = document.querySelector(".thumb-6 img");
+  const image7 = document.querySelector(".thumb-7 img");
+
+  if (
+    !row ||
+    !image6 ||
+    !image7 ||
+    !row.clientWidth ||
+    !image6.naturalWidth ||
+    !image7.naturalWidth
+  ) {
+    return;
+  }
+
+  const rowRect = row.getBoundingClientRect();
+  const image6Rect = image6.getBoundingClientRect();
+  const image7Rect = image7.getBoundingClientRect();
+  const thumb7Rect = image7.parentElement.getBoundingClientRect();
+
+  const gap = image6Rect.right - image7Rect.left;
+  const newLeft =
+    ((thumb7Rect.left - rowRect.left + gap) / rowRect.width) * 100;
+
+  image7.parentElement.style.left = `${newLeft}%`;
+}
+
+
+window.addEventListener("resize", alignSixAndSeven);
+
+  function setPlayhead(y) {
+    const minY = grayAreaTop();
+    const lineHeight = timeline.offsetHeight || 2;
+    const targetY = Math.max(minY, y);
+
+    // 아래로 더 이동할 공간이 필요하면 회색 작업 영역을 늘려
+    extendStage(targetY + lineHeight);
+
+    const maxY = Math.max(minY, stage.clientHeight - lineHeight);
+    playheadY = Math.min(targetY, maxY);
+    timeline.style.top = `${playheadY}px`;
+    updateTimeIndicator(playheadY);
+
+  }
+
+  function resetClickSequence() {
+    lastPhotoClickTime = null;
+    lastPhotoEventY = playheadY;
+    lastPhotoFile = null;
+  }
+
+  function enterEditorMode() {
+    gallery.classList.add("editor-mode");
+
+    const lineTop = timeline.getBoundingClientRect().top;
+    const stageTop = stage.getBoundingClientRect().top;
+    setPlayhead(lineTop - stageTop);
+    resetClickSequence();
+  }
+
+  // 표지 클릭 → 썸네일 화면, 그 화면에서 한 번 더 클릭 → 편집 화면
+  document.addEventListener("click", () => {
+    if (!document.body.classList.contains("show-gallery")) {
+      document.body.classList.add("show-gallery");
+      requestAnimationFrame(alignSixAndSeven);
+      return;
+    }
+
+    if (!gallery.classList.contains("editor-mode")) {
+      enterEditorMode();
+    }
+  });
+
+  // 검은 선을 회색 작업 영역 안에서만 위아래로 이동
+  timeline.addEventListener("pointerdown", (event) => {
+    if (!gallery.classList.contains("editor-mode") || isPlaying) return;
+
+    isDragging = true;
+    timeline.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+
+  timeline.addEventListener("pointermove", (event) => {
+    if (!isDragging) return;
+
+    const stageTop = stage.getBoundingClientRect().top;
+    setPlayhead(event.clientY - stageTop);
+
+    const areaRect = scrollArea.getBoundingClientRect();
+
+    if (event.clientY > areaRect.bottom - 28) {
+      scrollArea.scrollTop += 14;
+    } else if (event.clientY < areaRect.top + 28) {
+      scrollArea.scrollTop -= 14;
+    }
+  });
+
+  function stopDragging() {
+    if (!isDragging) return;
+    isDragging = false;
+
+    // 선을 새 위치에 놓으면 그 위치부터 새 클릭 간격을 계산
+    resetClickSequence();
+  }
+
+  timeline.addEventListener("pointerup", stopDragging);
+  timeline.addEventListener("pointercancel", stopDragging);
+  timeline.addEventListener("lostpointercapture", stopDragging);
+
+  // 사진을 누른 간격을 세로 위치 간격으로 반영
+  document.querySelectorAll(".thumbnail img").forEach((thumbnailImage) => {
+    thumbnailImage.addEventListener("click", (event) => {
+      if (!gallery.classList.contains("editor-mode")) return;
+
+      event.stopPropagation();
+
+      const file = thumbnailImage.getAttribute("src");
+      const imageRect = thumbnailImage.getBoundingClientRect();
+      const rowRect = thumbnailRow.getBoundingClientRect();
+
+      if (!rowRect.width) return;
+
+      const now = performance.now();
+let eventY;
+
+if (file !== lastPhotoFile) {
+  // 다른 사진을 처음 누르면 현재 검은 선 위치에서 시작
+  lastPhotoFile = file;
+  eventY = playheadY;
+} else if (lastPhotoClickTime === null) {
+  eventY = playheadY;
+} else {
+  // 같은 사진을 이어 누르면 클릭 간격만큼 아래에 배치
+  const clickGapSeconds = (now - lastPhotoClickTime) / 1000;
+  eventY =
+    lastPhotoEventY +
+    clickGapSeconds * pixelsPerSecond;
+}
+
+lastPhotoClickTime = now;
+lastPhotoEventY = eventY;
+updateTimeIndicator(eventY);
+startTimeIndicator();
+
+      const leftPercent =
+        ((imageRect.left - rowRect.left) / rowRect.width) * 100;
+
+      const lineHeight = timeline.offsetHeight || 2;
+      extendStage(eventY + lineHeight + imageRect.height);
+
+      const beatImage = document.createElement("img");
+      beatImage.className = "beat-event";
+      beatImage.src = file;
+      beatImage.alt = "";
+      beatImage.draggable = false;
+      beatImage.dataset.file = file;
+      beatImage.style.left = `${leftPercent}%`;
+
+      // 사진의 윗면을 검은 선 바로 아래에 붙임
+      beatImage.style.top = `${eventY + lineHeight}px`;
+      beatImage.style.zIndex = String(2 + beatEvents.length);
+
+      stage.appendChild(beatImage);
+
+      beatEvents.push({
+  y: eventY,
+  file,
+  leftPercent,
+  width: imageRect.width,
+  height: imageRect.height,
+    element: beatImage,
+  audioFile: file.replace(/\.png$/i, ".wav")
+});
+const previewAudio = new Audio(file.replace(/\.png$/i, ".wav"));
+
+previewAudio.play().catch((error) => {
+  console.warn("미리 듣기 소리를 재생하지 못했어.", error);
+});
+
+      // 새 사진이 아래쪽에 놓이면 그 위치가 보이도록 스크롤
+      const visibleBottom = scrollArea.scrollTop + scrollArea.clientHeight;
+      if (eventY > visibleBottom - scrollArea.clientHeight * 0.75) {
+        scrollArea.scrollTop = Math.max(
+          0,
+          eventY - scrollArea.clientHeight * 0.5
+        );
+      }
+    });
+  });
+
+  function stopPlayback(resetLine = true) {
+    isPlaying = false;
+
+    timerIds.forEach((id) => clearTimeout(id));
+    timerIds.length = 0;
+
+    playingAudios.forEach((audio) => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    playingAudios.length = 0;
+
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = 0;
+    }
+
+    playButton.textContent = "PLAY";
+
+    if (resetLine) {
+      setPlayhead(grayAreaTop());
+      scrollArea.scrollTop = 0;
+      resetClickSequence();
+    }
+  }
+
+function createStackBacking(events, landingTopByEvent) {
+  const canvas = document.createElement("canvas");
+  canvas.className = "stack-backing";
+
+  const width = Math.ceil(fallingLayer.clientWidth);
+  const height = Math.ceil(fallingLayer.clientHeight);
+
+  canvas.width = width;
+  canvas.height = height;
+
+  if (events.length === 0 || width === 0 || height === 0) {
+    return canvas;
+  }
+
+  const context = canvas.getContext("2d");
+  const padding = 24;
+
+  // 사진 각각의 위치와 바깥 여백을 계산해
+  const boxes = events
+    .map((item) => {
+      const x = (item.leftPercent / 100) * width;
+      const y = landingTopByEvent.get(item);
+
+      return {
+        left: Math.max(0, x - padding),
+        top: Math.max(0, y - padding),
+        right: Math.min(width, x + item.width + padding),
+        bottom: Math.min(height, y + item.height + padding)
+      };
+    })
+    .filter((box) => box.right > box.left && box.bottom > box.top);
+
+  if (boxes.length === 0) return canvas;
+
+  // 사진이 놓인 높이마다 좌우 외곽을 계산해 이어 붙여
+  const rows = [];
+
+  for (let y = 0; y < height; y++) {
+    const activeBoxes = boxes.filter(
+      (box) => box.top < y + 1 && box.bottom > y
+    );
+
+    if (activeBoxes.length === 0) continue;
+
+    rows.push({
+      y,
+      left: Math.min(...activeBoxes.map((box) => box.left)),
+      right: Math.max(...activeBoxes.map((box) => box.right))
+    });
+  }
+
+  context.fillStyle = "#000000";
+
+  rows.forEach((row, index) => {
+    context.fillRect(row.left, row.y, row.right - row.left, 1);
+
+    // 사진 사이에 세로 빈틈이 있으면 외곽이 끊기지 않게 연결해
+    const nextRow = rows[index + 1];
+    if (!nextRow || nextRow.y <= row.y + 1) return;
+
+    const gap = nextRow.y - row.y;
+
+    for (let y = row.y + 1; y < nextRow.y; y++) {
+      const progress = (y - row.y) / gap;
+      const left = row.left + (nextRow.left - row.left) * progress;
+      const right = row.right + (nextRow.right - row.right) * progress;
+
+      context.fillRect(left, y, right - left, 1);
+    }
+  });
+
+  return canvas;
+}
+
+  function startPlayback() {
+    if (beatEvents.length === 0) return;
+
+    isPlaying = true;
+    playButton.textContent = "STOP";
+
+    const startY = grayAreaTop();
+    const lastEventY = Math.max(...beatEvents.map((item) => item.y));
+    const lastEventTime =
+      Math.max(0, (lastEventY - startY) / pixelsPerSecond);
+    const stopAfter = lastEventTime + 1.5;
+
+   fallingLayer.replaceChildren();
+fallingLayer.style.display = "block";
+fitFallingLayer();
+beatEvents.forEach((item) => {
+  item.element.style.visibility = "hidden";
+});
+    const orderedEvents = [...beatEvents].sort((a, b) => a.y - b.y);
+   
+const firstEvent = orderedEvents[0];
+const landingTopByEvent = new Map();
+
+orderedEvents.forEach((item) => {
+  const distanceFromFirst = item.y - firstEvent.y;
+
+  landingTopByEvent.set(
+    item,
+    fallingLayer.clientHeight -
+      24 -
+      firstEvent.height -
+      distanceFromFirst
+  );
+});
+
+    const stackBacking = createStackBacking(
+      orderedEvents,
+      landingTopByEvent
+    );
+
+    fallingLayer.appendChild(stackBacking);
+
+// 악보가 화면보다 길 때만 맨 아래로 부드럽게 스크롤
+
+
+
+
+    orderedEvents.forEach((item) => {
+      const delay = Math.max(
+        0,
+        ((item.y - startY) / pixelsPerSecond) * 1000
+      );
+
+      const timerId = setTimeout(() => {
+        if (!isPlaying) return;
+
+        const dropBlock = new Image();
+dropBlock.className = "falling-block";
+dropBlock.src = item.file;
+dropBlock.alt = "";
+dropBlock.draggable = false;
+dropBlock.style.left = `${item.leftPercent}%`;
+dropBlock.style.width = `${item.width}px`;
+dropBlock.style.height = `${item.height}px`;
+
+const landingTop = landingTopByEvent.get(item);
+
+dropBlock.style.top = `${-item.height}px`;
+fallingLayer.appendChild(dropBlock);
+
+requestAnimationFrame(() => {
+  dropBlock.style.transition =
+     "top 0.8s ease-out";
+  dropBlock.style.top = `${landingTop}px`;
+});
+
+const audio = new Audio(item.audioFile);
+playingAudios.push(audio);
+audio.play().catch((error) => {
+  console.warn(`${item.audioFile} 재생을 확인해줘.`, error);
+});
+
+      }, delay);
+
+      timerIds.push(timerId);
+    });
+
+    const lastDropDelay = Math.max(
+      ...orderedEvents.map((item) =>
+        Math.max(0, ((item.y - startY) / pixelsPerSecond) * 1000)
+      )
+    );
+
+    const backingRevealTimer = setTimeout(() => {
+      stackBacking.style.opacity = "1";
+    }, lastDropDelay + 850);
+
+    timerIds.push(backingRevealTimer);
+
+    const startedAt = performance.now();
+
+
+    function moveLineDuringPlayback(now) {
+  if (!isPlaying) return;
+
+  const elapsed = (now - startedAt) / 1000;
+
+  if (elapsed >= stopAfter) {
+    stopPlayback(false);
+    return;
+  }
+
+  animationId = requestAnimationFrame(moveLineDuringPlayback);
+}
+
+animationId = requestAnimationFrame(moveLineDuringPlayback);
+  }
+
+  playButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    if (isPlaying) {
+      stopPlayback(true);
+    } else {
+      startPlayback();
+    }
+  });
+})();
+</script>
+</body>
+</html>
